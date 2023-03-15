@@ -8,6 +8,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL")));
+builder.Services.token
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("MyCors",
+        policy =>
+        {
+            policy.AllowAnyHeader();
+            policy.AllowAnyMethod();
+            policy.AllowAnyOrigin();
+        });
+});
 
 var app = builder.Build();
 
@@ -18,6 +29,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors("MyCors");
 app.UseHttpsRedirection();
 
 app.MapGet("/api/todos", async (AppDbContext appDbContext) => await appDbContext.Todo.ToListAsync());
@@ -31,11 +43,11 @@ app.MapPost("/api/todos", async (AppDbContext appDbContext, Todo todo) =>
     Results.Accepted();
 });
 
-app.MapPut("/api/todos/{id}", async (AppDbContext appDbContext, Todo todo, string id) =>
+app.MapPut("/api/todos/{id}", async (AppDbContext appDbContext, string id, Todo todo) =>
 {
     if (id != todo.Id) Results.BadRequest();
 
-    appDbContext.Todo.Update(todo);
+    appDbContext.Update(todo);
     await appDbContext.SaveChangesAsync();
 
     return Results.NoContent();
